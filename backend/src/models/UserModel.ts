@@ -19,13 +19,15 @@ const UserSchema = new mongoose.Schema<IUser>(
 
 UserSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  const SALT_ROUNDS = 12;
+  this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
   next();
 });
 
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
-) {
+): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
