@@ -3,21 +3,17 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 
-interface AuthRequest extends Request {
-  user?: string;
-}
-
 export const authMiddleware = (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
-  if (!token)
-    return res
-      .status(401)
-      .json({ message: "Acesso negado. Token não fornecido." });
+  if (!token) {
+    res.status(401).json({ message: "Acesso negado. Token não fornecido." });
+    return;
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
@@ -26,17 +22,19 @@ export const authMiddleware = (
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "TokenExpiredError") {
-        return res.status(401).json({ message: "Token expirado." });
+        res.status(401).json({ message: "Token expirado." });
+        return;
       }
       if (error.name === "JsonWebTokenError") {
-        return res.status(401).json({ message: "Token inválido." });
+        res.status(401).json({ message: "Token inválido." });
+        return;
       }
-      return res
-        .status(500)
-        .json({ message: `Erro interno: ${error.message}` });
+      res.status(500).json({ message: `Erro interno: ${error.message}` });
+      return;
     }
-    return res
+    res
       .status(500)
       .json({ message: "Erro desconhecido na validação do token." });
+    return;
   }
 };
